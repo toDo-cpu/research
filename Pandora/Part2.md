@@ -28,6 +28,17 @@ Depending on your cpu. After you can enable early loading of microcode [here](ht
 
 ### Authentication
 
+**Lock user after multiple login attempts**
+**pam** by default lock a user for 10 minutes after 3 failed login attempt in 15 minutes. By default it is disable for root. So l'ets enable it and change the parameters:
+```
+faillock --user root --reset
+```
+Edit the file `/etc/security/faillock.conf` and change:
+ - `unlock_time`: change the lockout time (in seconds).
+ - `fail_interval`: the time in which the failed login can lock the user
+ - `deny`: the number of failed login needed to lockout.
+And to make this configuration persistent, change the parameter `dir` in `/etc/security/failloc.conf` to `/var/lib/faillock`.
+
 **Delay between auth**
 Add login delay between each authentication:
 ```
@@ -45,8 +56,7 @@ You should use sudo instead of su for theses reasons:
  - You can allow a user to use a specific commands.
 
 **Change the password asked by sudo**
-You should also force sudo to ask for
-the root password instead of the user password. So if a user which can execute sudo is compromised by an attacker. The attacker should find the root password instead the user password. you can change by adding `Defaults targetpw` in the `/etc/sudoers`. If you are afraid of bruteforce attack against the root password. You can restrict this to a specific group.
+You should also force sudo to ask for the root password instead of the user password. So if a user which can execute sudo is compromised by an attacker. The attacker should find the root password instead the user password. you can change by adding `Defaults targetpw` in the `/etc/sudoers`. If you are afraid of bruteforce attack against the root password. You can restrict this to a specific group.
 ```
 Defaults:%wheel targetpw
 %wheel ALL=(ALL) ALL
@@ -62,7 +72,7 @@ passwd --lock root
 or you can do the next tips
 
 **Disable root login over ssh**
-The well known no root login on ssh, open `/etc/sshd/sshd_config` and edit:
+The well known no root login on ssh, open `/etc/ssh/sshd_config` and edit:
 ```
 # Authentication:
 
@@ -79,7 +89,7 @@ Do you remember the principe of **least privileges** ? Well this part is importa
 So here is the plan. Remember **root** account is locked or we can not log into root with ssh
 For my servers, I'm going to do this:
 - 1 group named service which handle all service
-- 1 user per service in group service, for example an user run/administrate **apache2** server. So it can access to **apache2.service**, access to apache logs.
+- 1 user per service in group service, for example an user run/administrate **apache2** server. So it can access to **apache2.service**, access to apache logs. Dont set password to theses account. If you want to access to theses account use `sudo su {user}` instead. You can also add your ssh key in `/home/{user}/.ssh/authorized_keys` to manage remotly your service without connecting to the "master" user.
 - 1 user named log-collector which get log and send them to a backup.
 - 1 user to administrate all this stuff. This user can run sudo but not the other users
 
@@ -93,6 +103,7 @@ password required pam_unix.so sha512 shadow nullok rounds=6000
 ```
 Here I increased the number of round in the hash function to 6000 (default 5000).
 Btw I higlhy recommend you to use sha512, it provid  the more longest hash
+> NOTE: the password are not updated autmatically, you have to do it manually with `passwd`.
 
 **Use a password manager**
 Imagin, you have a fully hardened system. With crasy security stuff but you get hacked because you use 1 password and it have been leaked. This is very sad right ? And the attacker will pay a mickey of your head. So use a password manager to ensure that your password for opening the system is unique and not reused. In the next article, I will show you how to setup the password manager **passbolt**. To create strong password, follow this [guide](https://wiki.archlinux.org/title/Security#Passwords) from the arch wiki.
@@ -117,4 +128,4 @@ You should also take care of disk usage by directory like `/var` of `/tmp` which
 
 ## Sources
  - https://wiki.archlinux.org/title/Security
- - https://theprivacyguide1.github.io/linux_hardening_guide#kernel
+ - https://theprivacyguide1.github.io/linux\_hardening\_guide#kernel
