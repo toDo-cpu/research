@@ -127,8 +127,20 @@ Btw I higlhy recommend you to use sha512, it provid  the more longest hash
 Imagine, you have a fully hardened system. With crasy security stuff but you get hacked because you use 1 password and it have been leaked. This is very sad right ? And the attacker will pay a mickey of your head. So use a password manager to ensure that your password for opening the system is unique and not reused. In the next article, I will show you how to setup the password manager **passbolt**. To create strong password, follow this [guide](https://wiki.archlinux.org/title/Security#Passwords) from the arch wiki.
 
 
-## 3. Storage
+## 3. System
 
+##Processes
+
+**Limit the amount of process per users**
+To prevent fork bombs or ddos, you can limit the number of process that a use can spwan.
+Add this line to `/etc/security/limits.conf`:
+```
+* soft nproc 100
+* hard nproc 200
+```
+It will set a limit of 100 process per user, this number can be increased to 200 with `prlimit`
+
+**
 ### Filesystem
 
 **Prevent hardlink and symlink issue**
@@ -143,6 +155,23 @@ You should also take care of disk usage by directory like `/var` of `/tmp` which
 //TODO
 
 **Mount with less prvilieges**
+You can mount a volume options like `nodev` which don't interpret charactor or block special device on this filesystem.
+Here are the most relevant for what we need:
+ - `nodev`
+ - `nosuid`: Do not allow set-user-identifier or set-group-identifier bits to take effect.
+ - `noexec`: Do not allow direct execution of any binaries on the mounted file system.
+> stolen from archlinux [wiki](https://wiki.archlinux.org/title/Security#Mount_options)
+You should always mount your filesystem used for data with `nodev`, `nosuid`, `noexec`.
+Imagine you have a sftp server which use a mounted drive at `/mnt/sftp-storage`. You mount it with:
+```
+sudo mount --mkdir noexec nodev nosuid /dev/XXX /mnt/sft-storage
+sudo genfstab >> /etc/fstab
+```
+Now imagine your there is a vulnerability in your sftp server which allow an attacker to execute file stored on the sftp server. This will prevent this.
+
+**File permissions**
+//TODO
+
 
 
 
