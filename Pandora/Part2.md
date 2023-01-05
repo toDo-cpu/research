@@ -28,6 +28,13 @@ Depending on your cpu. After you can enable early loading of microcode [here](ht
 
 ### Authentication
 
+**Block root auth with su**
+On BSD, by default only members of the `wheel` group can `su` to root. And this is not the default of GNU `su`. To enable this feature uncomment the line:
+```
+auth required pam_wheel.so use_uid
+```
+in `/etc/pam.d/su` and `/etc/pam.d/su-l`.
+
 **Lock user after multiple login attempts**
 **pam** by default lock a user for 10 minutes after 3 failed login attempt in 15 minutes. By default it is disable for root. So l'ets enable it and change the parameters:
 ```
@@ -123,8 +130,53 @@ You should also take care of disk usage by directory like `/var` of `/tmp` which
 //TODO
 
 **Mount with less prvilieges**
+//TODO
 
+**File encryption**
+//TODO
 
+**
+
+## 4. Softwares
+
+### Kernel
+> Some tips can slow your system
+
+**Use a hardened kernel**
+You can use the `linux-hardened` package, which use a basic kernel hardening patch set ([see](https://wiki.archlinux.org/title/Security#Kernel_self-protection_/_exploit_mitigation)). But as I said before you can made a custom build for your kernel. The package also provided an improvement for the **ASLR** in usersapce.
+
+**Hinding kernel symbols**
+Some local root exploit use `/proc/kallsyms` which list all the kernel symbols and their address to perform attack on the kernel. You can disable the showing of `/proc/kallsyms` by setting the line `kernel.ptr_restrict` to 1 or 2 (2 for nobody can see it) in `/etc/sysctl.d/51-kptr-restrict.conf`.
+> Program which use the `/proc/kallsyms` run as non root wont work anyway.
+
+**Protect your kernel from BPF**
+**BPF** or **eBPF** is a technology created to log event in the kernel. It attach to `tracepoint`, `kprobes` and other tracing thecnlogies. The BPF are run im a VM in the kernel. And as unprivilieged user, you can run a bpf in the vm. Which is very dangerous and expose directly your kernel. To prevent set the line:
+```
+kernel.unprivileged_bpf_disabled
+```
+to `1` in `/etc/sysctl.d/51-kptr-restrict.conf`.
+You can also harden the **JIT** which mitigate some spraying attack but it will cost performance et the ability to debug the **eBPF**. So if your server use **eBPF** techology use it at your risk. To harden change the value of `/proc/sys/net/core/bpf_jit_harden` to `1`.
+
+**Id your pid**
+By default, every process can see the pid of other process (maybe not for privileged but I'm not sure. You can see them in `/proc`. This complicate the task of the ressource gathering when an attacker gain the access to your system and search to escalate the privileges. To hide pid, you have to mount `/proc` with ``hidepid=2`, `gid=proc` argument in the fstab. This is documented here `https://docs.kernel.org/filesystems/proc.html`. If you want to add a user to the whitelist add the user to `proc` group.
+```
+proc	/proc	proc	nosuid,nodev,noexec,hidepid=2,gid=proc	0	0
+```
+And to enable the whitelist, and the exception to `/etc/systemd/system/systemd-logind.service.d/hidepid.conf`:
+```
+[Service]
+SupplementaryGroups=proc
+```
+
+**Disable the LKM loading**
+**LKM** are driver which can be loaded dymiacly in the kernel during the runtime. Rootkit are often **LKM**. You can disable it by set `module.sig_enforce=1` ot the kernel parameter (see with your bootloader). Ensure that `CONFIG_MODULE_SIG_ALL` is set when compiling the kernel.
+
+**Disable Kexec**
+Kexec allow you to replace the running kernel. I think I dont have to explain why this is critic
+Set `kernel.kexec_load_disabled` to `1` in `/etc/sysctl.d/51-kexec-restrict.conf`.
+
+**Enable lockdown mode**
+//TODO
 
 ## Sources
  - https://wiki.archlinux.org/title/Security
